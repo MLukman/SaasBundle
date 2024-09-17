@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="MLukman\SaasBundle\Entity\CreditUsageSource" table="saas_credit_usage_sources">
+        <id name="id" type="integer" column="id">
+            <generator strategy="AUTO" />
+        </id>
+        <field name="points" type="integer" nullable="false" />
+        <many-to-one field="credit" target-entity="Credit" orphan-removal="true">
+            <join-column name="credit_id" referenced-column-name="id" on-delete="CASCADE" on-update="CASCADE" />
+        </many-to-one>
+        <many-to-one field="usage" target-entity="CreditUsage" orphan-removal="true">
+            <join-column name="usage_id" referenced-column-name="id" on-delete="CASCADE" on-update="CASCADE" />
+        </many-to-one>
+        <indexes>
+            <index name="credit_idx" columns="credit_id" />
+            <index name="usage_idx" columns="usage_id" />
+        </indexes>
+    </entity>
+
+</doctrine-mapping>

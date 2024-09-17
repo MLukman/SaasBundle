@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="MLukman\SaasBundle\Entity\CreditPayment" table="saas_credit_payments" >
+        <field name="wallet" column="wallet_identifier" type="string" length="255" nullable="true" />
+        <field name="topup" column="topup_identifier" type="string" length="50" nullable="true" />
+        <one-to-one field="credit" target-entity="Credit">
+            <join-column name="credit_id" referenced-column-name="id" on-delete="SET NULL" on-update="CASCADE" />
+        </one-to-one>
+        <indexes>
+            <index name="wallet_idx" columns="wallet_identifier" />
+        </indexes>
+    </entity>
+
+</doctrine-mapping>

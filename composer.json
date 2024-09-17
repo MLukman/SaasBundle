@@ -1,0 +1,47 @@
+{
+    "name": "mlukman/saas-bundle",
+    "version": "1.0.0",
+    "description": "A set of classes to simplify Symfony-Doctrine integration",
+    "type": "symfony-bundle",
+    "require": {
+        "php": ">=8.1",
+        "doctrine/doctrine-bundle": "^2.8|^3.0",
+        "doctrine/orm": "^2.8|^3.0",
+        "mlukman/config-helper-bundle": "1.*",
+        "ramsey/uuid-doctrine": "^2.0",
+        "stripe/stripe-php": "^15.9",
+        "symfony/console": "^6.1|^7.0",
+        "symfony/framework-bundle": "^6.1|^7.0",
+        "symfony/runtime": "^6.1|^7.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": true,
+            "symfony/runtime": true
+        },
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "MLukman\\SaasBundle\\": "src/"
+        }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Muhammad Lukman Nasaruddin",
+            "email": "lukman.nasaruddin@gmail.com"
+        }
+    ],
+    "autoload-dev": {
+        "psr-4": { 
+            "MLukman\\SaasBundle\\Tests\\": "tests/" 
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "symfony/debug-bundle": "^6.1|^7.0",
+        "symfony/phpunit-bridge": "^6.1|^7.0",
+        "symfony/yaml": "^6.1|^7.0"
+    }
+}

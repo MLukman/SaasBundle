@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="MLukman\SaasBundle\Entity\Credit" table="saas_credits">
+        <id name="id" type="integer" column="id">
+            <generator strategy="AUTO" />
+        </id>
+        <field name="wallet" column="wallet_identifier" type="string" length="255" nullable="false" />
+        <field name="points" type="integer" nullable="false" />
+        <field name="balance" type="integer" nullable="false" />
+        <field name="topup" column="topup_identifier" type="string" length="50" nullable="true" />
+        <field name="created" type="datetime" nullable="false" />
+        <field name="expiry" type="datetime" nullable="true" />
+        <one-to-many field="usages" target-entity="CreditUsageSource" mapped-by="credit" />
+        <indexes>
+            <index name="wallet_idx" columns="wallet_identifier" />
+        </indexes>
+    </entity>
+
+</doctrine-mapping>
