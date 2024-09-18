@@ -14,7 +14,11 @@
         <field name="topup" column="topup_identifier" type="string" length="50" nullable="true" />
         <field name="created" type="datetime" nullable="false" />
         <field name="expiry" type="datetime" nullable="true" />
-        <one-to-many field="usages" target-entity="CreditUsageSource" mapped-by="credit" />
+        <one-to-many field="usageParts" target-entity="CreditUsagePart" mapped-by="credit">
+            <order-by>
+                <order-by-field name="id" direction="ASC" />
+            </order-by>
+        </one-to-many>
         <indexes>
             <index name="wallet_idx" columns="wallet_identifier" />
         </indexes>

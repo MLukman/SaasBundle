@@ -16,9 +16,9 @@ interface ProviderInterface
 
     public function initialize(SaasUtil $saas, array $paymentConfigParams): bool;
 
-    public function initiateTopupTransaction(TopupConfig $topup, string $redirectBackUrl): ?TransactionInterface;
+    public function initiateCreditPurchaseTransaction(TopupConfig $topup, string $redirectBackUrl): ?TransactionInterface;
 
-    public function retrieveTopupTransaction(string $reference): ?TransactionInterface;
+    public function retrieveCreditPurchaseTransaction(string $reference): ?TransactionInterface;
 
     public function generateRedirectForTransaction(TransactionInterface $transaction): Response;
 

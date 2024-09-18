@@ -7,7 +7,7 @@
     <entity name="MLukman\SaasBundle\Entity\Payment" table="saas_payments" inheritance-type="JOINED">
         <discriminator-column name="purpose" type="string" />
         <discriminator-map>
-            <discriminator-mapping value="credit" class="MLukman\SaasBundle\Entity\CreditPayment" />
+            <discriminator-mapping value="credit" class="MLukman\SaasBundle\Entity\CreditPurchase" />
         </discriminator-map>        
         <id name="id" type="integer" column="id">
             <generator strategy="AUTO" />

@@ -15,7 +15,7 @@ class CreditUsage
     protected string $type;
     protected string $reference;
     protected DateTime $created;
-    protected Collection $sources;
+    protected Collection $creditParts;
 
     public function __construct(string $wallet, int $points, string $type, string $reference)
     {
@@ -24,7 +24,7 @@ class CreditUsage
         $this->type = $type;
         $this->reference = $reference;
         $this->created = new \DateTime();
-        $this->sources = new ArrayCollection();
+        $this->creditParts = new ArrayCollection();
     }
 
     public function getId(): int
@@ -57,8 +57,8 @@ class CreditUsage
         return $this->created;
     }
 
-    public function getSources(): Collection
+    public function getCreditParts(): Collection
     {
-        return $this->sources;
+        return $this->creditParts;
     }
 }

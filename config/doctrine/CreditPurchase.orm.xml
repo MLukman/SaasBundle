@@ -4,7 +4,7 @@
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
                           https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
-    <entity name="MLukman\SaasBundle\Entity\CreditPayment" table="saas_credit_payments" >
+    <entity name="MLukman\SaasBundle\Entity\CreditPurchase" table="saas_credit_purchases" >
         <field name="wallet" column="wallet_identifier" type="string" length="255" nullable="true" />
         <field name="topup" column="topup_identifier" type="string" length="50" nullable="true" />
         <one-to-one field="credit" target-entity="Credit">

@@ -37,7 +37,7 @@ class StripeProvider implements ProviderInterface
         return false;
     }
 
-    public function retrieveTopupTransaction(string $reference): ?TransactionInterface
+    public function retrieveCreditPurchaseTransaction(string $reference): ?TransactionInterface
     {
         try {
             $checkoutSession = $this->stripeClient->checkout->sessions->retrieve($reference);
@@ -53,7 +53,7 @@ class StripeProvider implements ProviderInterface
         return null;
     }
 
-    public function initiateTopupTransaction(TopupConfig $topup, string $redirectBackUrl): ?TransactionInterface
+    public function initiateCreditPurchaseTransaction(TopupConfig $topup, string $redirectBackUrl): ?TransactionInterface
     {
         $checkoutSession = $this->stripeClient->checkout->sessions->create([
             'line_items' => [

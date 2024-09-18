@@ -6,14 +6,13 @@ use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NoResultException;
 use MLukman\SaasBundle\Config\SaasConfig;
-use MLukman\SaasBundle\Entity\CreditPayment;
+use MLukman\SaasBundle\Entity\CreditPurchase;
 use MLukman\SaasBundle\Entity\Payment;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
 use MLukman\SaasBundle\Payment\ProviderInterface;
 use MLukman\SymfonyConfigHelper\ConfigProcessor;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class SaasUtil
@@ -24,7 +23,6 @@ class SaasUtil
 
     public function __construct(
             protected EntityManagerInterface $em,
-            protected RequestStack $requestStack,
             protected SaasPrepaidManager $prepaidManager,
             #[AutowireIterator('saas.payment.provider')] protected iterable $paymentProviders)
     {
@@ -69,11 +67,8 @@ class SaasUtil
         return $this->paymentProvider;
     }
 
-    public function getPaymentByTransaction(SessionInterface|string $transaction): ?Payment
+    public function getPaymentByTransaction(string $transaction): ?Payment
     {
-        if ($transaction instanceof SessionInterface) {
-            $transaction = $transaction->get('saas.payment.transaction', '');
-        }
         try {
             return $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\Payment p WHERE p.transaction = :transaction')
                             ->setParameter('transaction', $transaction)
@@ -83,7 +78,7 @@ class SaasUtil
         }
     }
 
-    public function updatePaymentTransaction(SessionInterface|string $transaction, int $status)
+    public function updatePaymentTransaction(string $transaction, int $status)
     {
         if (!($payment = $this->getPaymentByTransaction($transaction))) {
             throw new RuntimeException("Payment transaction not found");
@@ -92,7 +87,7 @@ class SaasUtil
         $payment->setUpdated(new DateTime());
         if ($status == 1) { // transaction completed
             switch (get_class($payment)) {
-                case CreditPayment::class:
+                case CreditPurchase::class:
                     $this->prepaidManager->completeTopupPayment($payment);
                     break;
             }

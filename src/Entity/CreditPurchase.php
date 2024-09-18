@@ -2,7 +2,7 @@
 
 namespace MLukman\SaasBundle\Entity;
 
-class CreditPayment extends Payment
+class CreditPurchase extends Payment
 {
 
     protected ?string $wallet;

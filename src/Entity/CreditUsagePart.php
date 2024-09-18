@@ -2,7 +2,7 @@
 
 namespace MLukman\SaasBundle\Entity;
 
-class CreditUsageSource
+class CreditUsagePart
 {
 
     protected int $id;

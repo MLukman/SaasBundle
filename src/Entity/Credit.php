@@ -16,7 +16,7 @@ class Credit
     protected ?string $topup;
     protected DateTime $created;
     protected ?DateTime $expiry;
-    protected Collection $usages;
+    protected Collection $usageParts;
 
     public function __construct(string $wallet, int $points, ?string $topup = null)
     {
@@ -24,15 +24,15 @@ class Credit
         $this->points = $points;
         $this->balance = $points;
         $this->topup = $topup;
-        $this->usages = new ArrayCollection();
+        $this->usageParts = new ArrayCollection();
         $this->created = new \DateTime();
     }
 
     public function recalculateBalance()
     {
         $bal = $this->points;
-        foreach ($this->usages as $usage) {
-            /* @var $usage CreditUsageSource */
+        foreach ($this->usageParts as $usage) {
+            /* @var $usage CreditUsagePart */
             $bal -= $usage->getPoints();
         }
         $this->balance = $bal;
@@ -78,8 +78,8 @@ class Credit
         $this->expiry = $expiry;
     }
 
-    public function getUsages(): Collection
+    public function getUsageParts(): Collection
     {
-        return $this->usages;
+        return $this->usageParts;
     }
 }
