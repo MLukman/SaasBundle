@@ -2,8 +2,8 @@
 
 namespace MLukman\SaasBundle\Config;
 
-use MLukman\SymfonyConfigHelper\Attribute\ArrayConfig;
-use MLukman\SymfonyConfigHelper\Attribute\ObjectArrayConfig;
+use MLukman\SymfonyConfigOOP\Attribute\ArrayConfig;
+use MLukman\SymfonyConfigOOP\Attribute\ObjectArrayConfig;
 
 class PrepaidConfig
 {

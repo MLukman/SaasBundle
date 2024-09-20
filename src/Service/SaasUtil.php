@@ -10,23 +10,22 @@ use MLukman\SaasBundle\Entity\CreditPurchase;
 use MLukman\SaasBundle\Entity\Payment;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
 use MLukman\SaasBundle\Payment\ProviderInterface;
-use MLukman\SymfonyConfigHelper\ConfigProcessor;
+use MLukman\SymfonyConfigOOP\ConfigUtil;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class SaasUtil
 {
-
     protected SaasConfig $configuration;
     protected ?ProviderInterface $paymentProvider = null;
 
     public function __construct(
-            protected EntityManagerInterface $em,
-            protected SaasPrepaidManager $prepaidManager,
-            #[AutowireIterator('saas.payment.provider')] protected iterable $paymentProviders)
-    {
-        
+        protected EntityManagerInterface $em,
+        protected SaasPrepaidManager $prepaidManager,
+        #[AutowireIterator('saas.payment.provider')] protected iterable $paymentProviders
+    ) {
+
     }
 
     public function getConfiguration(): SaasConfig
@@ -37,7 +36,7 @@ class SaasUtil
     public function setConfiguration(SaasConfig|array $configuration): void
     {
         if (is_array($configuration)) {
-            $configuration = ConfigProcessor::process($configuration, SaasConfig::class);
+            $configuration = ConfigUtil::process($configuration, SaasConfig::class);
         }
         $this->configuration = $configuration;
         foreach ($this->paymentProviders as $paymentProvider) {

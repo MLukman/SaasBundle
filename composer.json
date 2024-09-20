@@ -1,13 +1,13 @@
 {
     "name": "mlukman/saas-bundle",
     "version": "1.0.0",
-    "description": "A set of classes to simplify Symfony-Doctrine integration",
+    "description": "Simplify implementation of Symfony 6.x/7.x web application with SaaS capabilities such as credit purchase, subscription management, usage tracking etc",
     "type": "symfony-bundle",
     "require": {
         "php": ">=8.1",
         "doctrine/doctrine-bundle": "^2.8|^3.0",
         "doctrine/orm": "^2.8|^3.0",
-        "mlukman/config-helper-bundle": "1.*",
+        "mlukman/symfony-config-oop": "1.*",
         "ramsey/uuid-doctrine": "^2.0",
         "stripe/stripe-php": "^15.9",
         "symfony/console": "^6.1|^7.0",

@@ -2,7 +2,7 @@
 
 namespace MLukman\SaasBundle\Config;
 
-use MLukman\SymfonyConfigHelper\Attribute\ObjectConfig;
+use MLukman\SymfonyConfigOOP\Attribute\ObjectConfig;
 
 class SaasConfig
 {

@@ -2,9 +2,9 @@
 
 namespace MLukman\SaasBundle\Config;
 
-use MLukman\SymfonyConfigHelper\Attribute\ArrayConfig;
-use MLukman\SymfonyConfigHelper\Attribute\IntegerConfig;
-use MLukman\SymfonyConfigHelper\Attribute\ScalarConfig;
+use MLukman\SymfonyConfigOOP\Attribute\ArrayConfig;
+use MLukman\SymfonyConfigOOP\Attribute\IntegerConfig;
+use MLukman\SymfonyConfigOOP\Attribute\ScalarConfig;
 
 class TopupConfig
 {
