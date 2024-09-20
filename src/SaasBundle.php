@@ -6,7 +6,7 @@ use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappi
 use MLukman\SaasBundle\Config\SaasConfig;
 use MLukman\SaasBundle\Payment\ProviderInterface;
 use MLukman\SaasBundle\Service\SaasUtil;
-use MLukman\SymfonyConfigHelper\Attribute\ObjectConfig;
+use MLukman\SymfonyConfigOOP\ConfigUtil;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -14,16 +14,15 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
 class SaasBundle extends AbstractBundle
 {
-
     public function configure(DefinitionConfigurator $definition): void
     {
-        ObjectConfig::populate($definition->rootNode(), SaasConfig::class);
+        ConfigUtil::populateDefinitionConfigurator($definition, SaasConfig::class);
     }
 
     public function build(ContainerBuilder $container): void
     {
         $container->addCompilerPass(
-                DoctrineOrmMappingsPass::createXmlMappingDriver([
+            DoctrineOrmMappingsPass::createXmlMappingDriver([
                     realpath(__DIR__ . '/../config/doctrine') => 'MLukman\\SaasBundle\\Entity'
                 ])
         );

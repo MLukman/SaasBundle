@@ -11,7 +11,6 @@ use Symfony\Component\HttpFoundation\Response;
 #[AutoconfigureTag('saas.payment.provider')]
 interface ProviderInterface
 {
-
     public function getId(): string;
 
     public function initialize(SaasUtil $saas, array $paymentConfigParams): bool;
@@ -23,4 +22,6 @@ interface ProviderInterface
     public function generateRedirectForTransaction(TransactionInterface $transaction): Response;
 
     public function handleWebhook(Request $request);
+
+    public function isTopupPurchasable(TopupConfig $topup): bool;
 }

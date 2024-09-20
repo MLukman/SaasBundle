@@ -16,7 +16,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class StripeProvider implements ProviderInterface
 {
-
     protected SaasUtil $saas;
     protected StripeClient $stripeClient;
 
@@ -27,12 +26,12 @@ class StripeProvider implements ProviderInterface
 
     public function initialize(SaasUtil $saas, array $paymentConfigParams): bool
     {
-        if (isset($paymentConfigParams['secret']) && ($secret = $_ENV[$paymentConfigParams['secret']] ?? null)) {
+        if (($secret = $paymentConfigParams['secret'] ?? null)) {
             $this->saas = $saas;
             $this->stripeClient = new StripeClient($secret);
             return true;
         } else {
-            throw new InvalidSaasConfigurationException("Stripe payment provider requires 'secret' param to be defined as the name of envvar that holds the Stripe API secret key");
+            throw new InvalidSaasConfigurationException("Stripe payment provider requires the Stripe API secret key to be configured in the 'saas.payment.secret' configuration key");
         }
         return false;
     }
@@ -48,7 +47,7 @@ class StripeProvider implements ProviderInterface
                 return $transaction;
             }
         } catch (Exception $ex) {
-            
+
         }
         return null;
     }
@@ -85,5 +84,10 @@ class StripeProvider implements ProviderInterface
                 $this->saas->updatePaymentTransaction($transaction, 1);
                 break;
         }
+    }
+
+    public function isTopupPurchasable(TopupConfig $topup): bool
+    {
+        return !empty($topup->getPaymentParams()['priceId'] ?? null);
     }
 }

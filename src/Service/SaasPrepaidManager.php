@@ -18,19 +18,18 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class SaasPrepaidManager
 {
-
     protected PrepaidConfig $configuration;
     protected ?ProviderInterface $paymentProvider = null;
-    static public string $creditClass = Credit::class;
-    static public string $creditUsageClass = CreditUsage::class;
-    static public string $creditUsagePartClass = CreditUsagePart::class;
-    static public string $creditPurchaseClass = CreditPurchase::class;
+    public static string $creditClass = Credit::class;
+    public static string $creditUsageClass = CreditUsage::class;
+    public static string $creditUsagePartClass = CreditUsagePart::class;
+    public static string $creditPurchaseClass = CreditPurchase::class;
 
     public function __construct(
-            protected EntityManagerInterface $em,
-            protected RequestStack $requestStack)
-    {
-        
+        protected EntityManagerInterface $em,
+        protected RequestStack $requestStack
+    ) {
+
     }
 
     public function getConfiguration(): PrepaidConfig
@@ -66,7 +65,7 @@ class SaasPrepaidManager
     {
         $topups = [];
         foreach ($this->configuration->getTopups() as $topupId => $topup) {
-            if (empty($topup->getPaymentParams())) {
+            if (!$this->paymentProvider->isTopupPurchasable($topup)) {
                 continue;
             }
             if ($topup->getLimit() > 0 && $this->getTopupCount($wallet, $topupId) >= $topup->getLimit()) {
