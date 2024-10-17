@@ -6,11 +6,11 @@ use DateTime;
 
 class Payment
 {
-
     protected int $id;
     protected string $provider;
     protected string $transaction;
     protected int $status = 0;
+    protected ?string $statusMessage = null;
     protected DateTime $created;
     protected ?DateTime $updated;
 
@@ -44,6 +44,16 @@ class Payment
     public function setStatus(int $status): void
     {
         $this->status = $status;
+    }
+
+    public function getStatusMessage(): ?string
+    {
+        return $this->statusMessage;
+    }
+
+    public function setStatusMessage(?string $statusMessage): void
+    {
+        $this->statusMessage = $statusMessage;
     }
 
     public function getCreated(): DateTime

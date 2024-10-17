@@ -13,7 +13,6 @@ use MLukman\SaasBundle\Payment\ProviderInterface;
 use MLukman\SymfonyConfigOOP\ConfigUtil;
 use RuntimeException;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class SaasUtil
 {
@@ -77,12 +76,13 @@ class SaasUtil
         }
     }
 
-    public function updatePaymentTransaction(string $transaction, int $status)
+    public function updatePaymentTransaction(string $transaction, int $status, ?string $statusMessage = null)
     {
         if (!($payment = $this->getPaymentByTransaction($transaction))) {
             throw new RuntimeException("Payment transaction not found");
         }
         $payment->setStatus($status);
+        $payment->setStatusMessage($statusMessage);
         $payment->setUpdated(new DateTime());
         if ($status == 1) { // transaction completed
             switch (get_class($payment)) {

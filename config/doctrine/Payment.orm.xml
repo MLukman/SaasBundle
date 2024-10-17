@@ -15,6 +15,7 @@
         <field name="provider" column="provider" type="string" length="50" nullable="false" />
         <field name="transaction" column="transaction" type="string" length="255" nullable="false" />
         <field name="status" type="integer" nullable="false" />
+        <field name="statusMessage" column="status_message" type="string" length="1000" nullable="true" />
         <field name="created" type="datetime" nullable="false" />
         <field name="updated" type="datetime" nullable="true" />
         <indexes>
