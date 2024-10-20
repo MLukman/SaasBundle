@@ -18,6 +18,10 @@
             <order-by>
                 <order-by-field name="id" direction="ASC" />
             </order-by>
+            <cascade>
+                <cascade-persist />
+                <cascade-remove />
+            </cascade>
         </one-to-many>
         <indexes>
             <index name="wallet_idx" columns="wallet_identifier" />
