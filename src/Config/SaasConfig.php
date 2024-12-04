@@ -6,11 +6,10 @@ use MLukman\SymfonyConfigOOP\Attribute\ObjectConfig;
 
 class SaasConfig
 {
-
     #[ObjectConfig(info: "Configurations related to credit based mechanism.")]
     private PrepaidConfig $prepaid;
 
-    #[ObjectConfig(info: "Configurations for the payment provider.", isRequired: true)]
+    #[ObjectConfig(info: "Configurations for the payment provider.")]
     private PaymentConfig $payment;
 
     public function getPrepaid(): ?PrepaidConfig
