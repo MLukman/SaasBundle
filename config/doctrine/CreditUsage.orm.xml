@@ -20,9 +20,9 @@
             </cascade>
         </one-to-many>
         <indexes>
-            <index name="wallet_idx" columns="wallet_identifier" />
-            <index name="type_idx" columns="type" />
-            <index name="reference_idx" columns="reference" />
+            <index name="saas_creditusages_wallet_idx" columns="wallet_identifier" />
+            <index name="saas_creditusages_type_idx" columns="type" />
+            <index name="saas_creditusages_reference_idx" columns="reference" />
         </indexes>
     </entity>
 

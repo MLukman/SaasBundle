@@ -1,0 +1,13 @@
+framework:
+    secret: "test"
+    test: ~
+
+doctrine:
+    dbal:
+        driver: "pdo_sqlite"
+        memory:   true
+        #path:   "%kernel.cache_dir%/../database.db3"
+    orm:
+        auto_mapping: false
+        controller_resolver:
+            auto_mapping: false

@@ -1,0 +1,15 @@
+saas:
+    prepaid:
+        topups:
+            JOINBONUS:
+                name: "Join Bonus"
+                credit: 100
+                validity: 1 year
+                limit: 1
+        usages:
+            USE_50: 50
+    payment:
+        driver: stripe
+        params:
+            secret: 'aaa'
+            signing_secret: 'bbb'

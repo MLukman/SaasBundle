@@ -16,8 +16,8 @@
             <join-column name="usage_id" referenced-column-name="id" on-delete="CASCADE" on-update="CASCADE" />
         </many-to-one>
         <indexes>
-            <index name="credit_idx" columns="credit_id" />
-            <index name="usage_idx" columns="usage_id" />
+            <index name="saas_creditusageparts_credit_idx" columns="credit_id" />
+            <index name="saas_creditusageparts_usage_idx" columns="usage_id" />
         </indexes>
     </entity>
 

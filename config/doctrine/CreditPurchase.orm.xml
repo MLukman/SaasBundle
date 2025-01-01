@@ -7,11 +7,12 @@
     <entity name="MLukman\SaasBundle\Entity\CreditPurchase" table="saas_credit_purchases" >
         <field name="wallet" column="wallet_identifier" type="string" length="255" nullable="true" />
         <field name="topup" column="topup_identifier" type="string" length="50" nullable="true" />
-        <one-to-one field="credit" target-entity="Credit">
+        <field name="quantity" column="quantity" type="integer" nullable="true" />
+        <one-to-one field="credit" target-entity="Credit" inversed-by="purchase">
             <join-column name="credit_id" referenced-column-name="id" on-delete="SET NULL" on-update="CASCADE" />
         </one-to-one>
         <indexes>
-            <index name="wallet_idx" columns="wallet_identifier" />
+            <index name="saas_creditpurchase_wallet_idx" columns="wallet_identifier" />
         </indexes>
     </entity>
 

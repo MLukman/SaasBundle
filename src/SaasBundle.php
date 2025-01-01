@@ -4,7 +4,7 @@ namespace MLukman\SaasBundle;
 
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DoctrineOrmMappingsPass;
 use MLukman\SaasBundle\Config\SaasConfig;
-use MLukman\SaasBundle\Payment\ProviderInterface;
+use MLukman\SaasBundle\Base\PaymentProvider;
 use MLukman\SaasBundle\Service\SaasUtil;
 use MLukman\SymfonyConfigOOP\ConfigUtil;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -23,15 +23,15 @@ class SaasBundle extends AbstractBundle
     {
         $container->addCompilerPass(
             DoctrineOrmMappingsPass::createXmlMappingDriver([
-                    realpath(__DIR__ . '/../config/doctrine') => 'MLukman\\SaasBundle\\Entity'
-                ])
+                realpath(__DIR__ . '/../config/doctrine') => 'MLukman\\SaasBundle\\Entity'
+            ])
         );
     }
 
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import('../config/services.yaml');
-        $builder->registerForAutoconfiguration(ProviderInterface::class)->addTag('saas.payment.provider');
+        $builder->registerForAutoconfiguration(PaymentProvider::class)->addTag('saas.payment.provider');
         $builder->getDefinition(SaasUtil::class)->addMethodCall('setConfiguration', [$config]);
     }
 }

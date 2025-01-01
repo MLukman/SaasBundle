@@ -8,22 +8,24 @@ use Doctrine\Common\Collections\Collection;
 
 class Credit
 {
-
     protected int $id;
     protected string $wallet;
     protected int $points;
     protected int $balance;
-    protected ?string $topup;
+    protected string $sourceType;
+    protected ?string $sourceReference;
     protected DateTime $created;
     protected ?DateTime $expiry;
     protected Collection $usageParts;
+    protected ?CreditPurchase $purchase;
 
-    public function __construct(string $wallet, int $points, ?string $topup = null)
+    public function __construct(string $wallet, int $points, string $sourceType, ?string $sourceReference = null)
     {
         $this->wallet = $wallet;
         $this->points = $points;
         $this->balance = $points;
-        $this->topup = $topup;
+        $this->sourceType = $sourceType;
+        $this->sourceReference = $sourceReference;
         $this->usageParts = new ArrayCollection();
         $this->created = new \DateTime();
     }
@@ -58,9 +60,14 @@ class Credit
         return $this->balance;
     }
 
-    public function getTopup(): ?string
+    public function getSourceType(): string
     {
-        return $this->topup;
+        return $this->sourceType;
+    }
+
+    public function getSourceReference(): ?string
+    {
+        return $this->sourceReference;
     }
 
     public function getCreated(): DateTime
@@ -81,5 +88,10 @@ class Credit
     public function getUsageParts(): Collection
     {
         return $this->usageParts;
+    }
+
+    public function getPurchase(): ?CreditPurchase
+    {
+        return $this->purchase;
     }
 }

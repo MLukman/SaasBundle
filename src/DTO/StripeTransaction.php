@@ -1,12 +1,11 @@
 <?php
 
-namespace MLukman\SaasBundle\Payment\Stripe;
+namespace MLukman\SaasBundle\DTO;
 
-use MLukman\SaasBundle\Payment\TransactionInterface;
+use MLukman\SaasBundle\Base\PaymentTransactionInterface;
 
-class StripeTransaction implements TransactionInterface
+class StripeTransaction implements PaymentTransactionInterface
 {
-
     public string $reference;
     public string $redirect;
 

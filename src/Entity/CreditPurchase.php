@@ -4,16 +4,17 @@ namespace MLukman\SaasBundle\Entity;
 
 class CreditPurchase extends Payment
 {
-
     protected ?string $wallet;
     protected ?string $topup;
+    protected ?int $quantity;
     protected ?Credit $credit;
 
-    public function __construct(string $provider, string $transaction, string $wallet, string $topup)
+    public function __construct(string $provider, string $transaction, string $wallet, string $topup, int $quantity = 1)
     {
         parent::__construct($provider, $transaction);
         $this->wallet = $wallet;
         $this->topup = $topup;
+        $this->quantity = $quantity;
     }
 
     public function getWallet(): ?string
@@ -24,6 +25,11 @@ class CreditPurchase extends Payment
     public function getTopup(): ?string
     {
         return $this->topup;
+    }
+
+    public function getQuantity(): ?int
+    {
+        return $this->quantity;
     }
 
     public function getCredit(): ?Credit

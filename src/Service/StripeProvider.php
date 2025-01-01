@@ -3,11 +3,11 @@
 namespace MLukman\SaasBundle\Service;
 
 use Exception;
+use MLukman\SaasBundle\Base\PaymentProvider;
+use MLukman\SaasBundle\Base\PaymentTransactionInterface;
 use MLukman\SaasBundle\Config\TopupConfig;
+use MLukman\SaasBundle\DTO\StripeTransaction;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
-use MLukman\SaasBundle\Payment\ProviderInterface;
-use MLukman\SaasBundle\Payment\Stripe\StripeTransaction;
-use MLukman\SaasBundle\Payment\TransactionInterface;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
@@ -16,9 +16,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class StripeProvider implements ProviderInterface
+class StripeProvider extends PaymentProvider
 {
-    protected SaasUtil $saas;
     protected StripeClient $stripeClient;
     protected array $params = [];
 
@@ -27,10 +26,9 @@ class StripeProvider implements ProviderInterface
         return "stripe";
     }
 
-    public function initialize(SaasUtil $saas, array $paymentConfigParams): bool
+    public function initialize(array $paymentConfigParams): bool
     {
         if (($secret = $paymentConfigParams['secret'] ?? null)) {
-            $this->saas = $saas;
             $this->stripeClient = new StripeClient($secret);
             $this->params = $paymentConfigParams;
             return true;
@@ -40,7 +38,7 @@ class StripeProvider implements ProviderInterface
         return false;
     }
 
-    public function retrieveCreditPurchaseTransaction(string $reference): ?TransactionInterface
+    public function retrieveCreditPurchaseTransaction(string $reference): ?PaymentTransactionInterface
     {
         try {
             $checkoutSession = $this->stripeClient->checkout->sessions->retrieve($reference);
@@ -51,18 +49,18 @@ class StripeProvider implements ProviderInterface
                 return $transaction;
             }
         } catch (Exception $ex) {
-
+            
         }
         return null;
     }
 
-    public function initiateCreditPurchaseTransaction(TopupConfig $topup, string $redirectBackUrl): ?TransactionInterface
+    public function initiateCreditPurchaseTransaction(TopupConfig $topup, int $quantity, string $redirectBackUrl): ?PaymentTransactionInterface
     {
         $checkoutSession = $this->stripeClient->checkout->sessions->create([
             'line_items' => [
                 [
                     'price' => $topup->getPaymentParams()['priceId'],
-                    'quantity' => 1,
+                    'quantity' => $quantity,
                 ],
             ],
             'mode' => 'payment',
@@ -74,7 +72,7 @@ class StripeProvider implements ProviderInterface
         return $transaction;
     }
 
-    public function generateRedirectForTransaction(TransactionInterface $transaction): Response
+    public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): Response
     {
         return new RedirectResponse($transaction->redirect);
     }
@@ -92,8 +90,8 @@ class StripeProvider implements ProviderInterface
                 $event = Webhook::constructEvent($request->getContent(), $_SERVER['HTTP_STRIPE_SIGNATURE'], $this->params['signing_secret']);
             } catch (SignatureVerificationException $e) {
                 // Invalid signature
-                if ($this->saas->getPaymentByTransaction($event->data->object->id)) {
-                    $this->saas->updatePaymentTransaction($event->data->object->id, -1, 'Error verifying webhook signature');
+                if ($this->getPaymentByTransaction($event->data->object->id)) {
+                    $this->updatePaymentTransaction($event->data->object->id, -1, 'Error verifying webhook signature');
                 }
                 http_response_code(400);
                 echo json_encode(['Error verifying webhook signature: ' => $e->getMessage()]);
@@ -103,7 +101,7 @@ class StripeProvider implements ProviderInterface
         switch ($event->type) {
             case 'checkout.session.completed':
                 $transaction = $event->data->object->id;
-                $this->saas->updatePaymentTransaction($transaction, 1);
+                $this->updatePaymentTransaction($transaction, 1);
                 break;
         }
         http_response_code(200);
