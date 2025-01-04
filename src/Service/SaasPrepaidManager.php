@@ -6,6 +6,7 @@ use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NoResultException;
 use Exception;
+use MLukman\SaasBundle\Base\PaymentProvider;
 use MLukman\SaasBundle\Config\PrepaidConfig;
 use MLukman\SaasBundle\Config\TopupConfig;
 use MLukman\SaasBundle\Entity\Credit;
@@ -13,10 +14,11 @@ use MLukman\SaasBundle\Entity\CreditPurchase;
 use MLukman\SaasBundle\Entity\CreditTransfer;
 use MLukman\SaasBundle\Entity\CreditUsage;
 use MLukman\SaasBundle\Entity\CreditUsagePart;
+use MLukman\SaasBundle\Entity\CreditWithdrawal;
+use MLukman\SaasBundle\Entity\PayoutAccount;
 use MLukman\SaasBundle\Event\CreditBalanceEvent;
 use MLukman\SaasBundle\InsufficientCreditBalanceException;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
-use MLukman\SaasBundle\Base\PaymentProvider;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -180,7 +182,7 @@ class SaasPrepaidManager
         }
         if (!$trans) {
             $trans = $this->paymentProvider->initiateCreditPurchaseTransaction($topup, $quantity, $redirectBackUrl);
-            $purchase = new CreditPurchase($this->paymentProvider->getId(), $trans->getReference(), $wallet, $topup->_id, $quantity);
+            $purchase = new self::$creditPurchaseClass($this->paymentProvider->getId(), $trans, $wallet, $topup->_id, $quantity);
             $this->em->persist($purchase);
             if (!$no_commit) {
                 $this->em->flush();
@@ -235,7 +237,19 @@ class SaasPrepaidManager
         $credit = $this->createCreditRecord($destinationWallet, $points, $type, $reference, '1 year');
         $transfer = new CreditTransfer($creditUsage, $credit);
         $this->em->persist($transfer);
+        $this->commitChanges();
         return $transfer;
+    }
+
+    public function withdrawCredit(string $sourceWallet, int $points, PayoutAccount $account, string $currency, int $amount, string $type, string $reference): CreditWithdrawal
+    {
+        $creditUsage = $this->createCreditUsageRecord($sourceWallet, $points, $type, $reference);
+        $withdrawal = new CreditWithdrawal($creditUsage);
+        $this->em->persist($withdrawal);
+        $payoutPayment = $this->paymentProvider->performPayoutToPayoutAccount($account, $currency, $amount);
+        $withdrawal->setDestination($payoutPayment);
+        $this->commitChanges();
+        return $withdrawal;
     }
 
     /**
@@ -297,6 +311,8 @@ class SaasPrepaidManager
             }
         }
         if ($points > 0) {
+            print $wallet;
+            exit;
             throw new InsufficientCreditBalanceException();
         }
         $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $usage];

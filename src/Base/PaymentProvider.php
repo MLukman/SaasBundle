@@ -2,12 +2,14 @@
 
 namespace MLukman\SaasBundle\Base;
 
-use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NoResultException;
 use MLukman\SaasBundle\Config\TopupConfig;
 use MLukman\SaasBundle\Entity\CreditPurchase;
 use MLukman\SaasBundle\Entity\Payment;
+use MLukman\SaasBundle\Entity\PayoutAccount;
+use MLukman\SaasBundle\Entity\PayoutPayment;
+use MLukman\SaasBundle\Service\SaasPrepaidManager;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,30 +19,33 @@ use UI\Exception\RuntimeException;
 #[AutoconfigureTag('saas.payment.provider')]
 abstract class PaymentProvider
 {
-    public function __construct(protected EntityManagerInterface $em)
+    public function __construct(protected EntityManagerInterface $em, protected SaasPrepaidManager $prepaidManager)
     {
         
     }
 
-    public function getPaymentByTransaction(string $transaction): ?Payment
+    public function getPaymentByTransactionId(string $transactionId): ?Payment
     {
         try {
-            return $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\Payment p WHERE p.transaction = :transaction')
-                    ->setParameter('transaction', $transaction)
+            return $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\Payment p WHERE p.transactionId = :transaction')
+                    ->setParameter('transaction', $transactionId)
                     ->getSingleResult();
         } catch (NoResultException $ex) {
             return null;
         }
     }
 
-    public function updatePaymentTransaction(string $transaction, int $status, ?string $statusMessage = null)
+    public function updatePaymentTransaction(string $transactionId, array $transactionData, string $currency, int $amount, int $status, ?string $statusMessage = null)
     {
-        if (!($payment = $this->getPaymentByTransaction($transaction))) {
+        if (!($payment = $this->getPaymentByTransactionId($transactionId))) {
             throw new RuntimeException("Payment transaction not found");
         }
+        $payment->setTransactionData($transactionData);
+        $payment->setCurrency($currency);
+        $payment->setAmount($amount);
         $payment->setStatus($status);
         $payment->setStatusMessage($statusMessage);
-        $payment->setUpdated(new DateTime());
+        $this->commitChanges();
         if ($status == 1) { // transaction completed
             switch (get_class($payment)) {
                 case CreditPurchase::class:
@@ -49,7 +54,32 @@ abstract class PaymentProvider
                     break;
             }
         }
-        $this->commitChanges();
+    }
+
+    public function getPayoutAccount(string $id): PayoutAccount
+    {
+        try {
+            $account = $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\PayoutAccount p WHERE p.id = :id')
+                ->setParameter('id', $id)
+                ->getSingleResult();
+            if (!$account->isReady() && ($accountData = $account->getData()) && $this->checkPayoutAccountReadiness($accountData)) {
+                $account->setReady(true);
+                $account->setData($accountData);
+                $this->commitChanges();
+            }
+            return $account;
+        } catch (NoResultException $ex) {
+            $data = $this->createPayoutAccount();
+            $pa = new PayoutAccount($id, $data);
+            $this->em->persist($pa);
+            $this->commitChanges();
+            return $pa;
+        }
+    }
+
+    public function getRedirectToPayoutAccountSetup(PayoutAccount $account, string $returnUrl, string $retryUrl): ?RedirectResponse
+    {
+        return $this->generateRedirectForPayoutAccountSetup($account->getData(), $returnUrl, $retryUrl);
     }
 
     public function commitChanges()
@@ -61,7 +91,11 @@ abstract class PaymentProvider
     abstract public function initialize(array $paymentConfigParams): bool;
     abstract public function initiateCreditPurchaseTransaction(TopupConfig $topup, int $quantity, string $redirectBackUrl): ?PaymentTransactionInterface;
     abstract public function retrieveCreditPurchaseTransaction(string $reference): ?PaymentTransactionInterface;
-    abstract public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): Response;
+    abstract public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): ?Response;
     abstract public function handleWebhook(Request $request);
     abstract public function isTopupPurchasable(TopupConfig $topup): bool;
+    abstract public function performPayoutToPayoutAccount(PayoutAccount $account, string $currency, int $amount): ?PayoutPayment;
+    abstract protected function createPayoutAccount(): array;
+    abstract protected function checkPayoutAccountReadiness(array &$accountData): bool;
+    abstract protected function generateRedirectForPayoutAccountSetup(array $accountData, string $returnUrl, string $retryUrl): ?RedirectResponse;
 }

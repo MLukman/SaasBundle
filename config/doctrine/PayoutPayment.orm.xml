@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                          https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="MLukman\SaasBundle\Entity\PayoutPayment" table="saas_payout_payments">
+        <many-to-one field="account" target-entity="PayoutAccount" orphan-removal="true" inversed-by="payments">
+            <join-column name="account_id" referenced-column-name="id" on-delete="CASCADE" on-update="CASCADE" />
+        </many-to-one>
+        <indexes>
+            <index name="saas_payoutpayments_account_idx" columns="account_id" />
+        </indexes>
+    </entity>
+
+</doctrine-mapping>

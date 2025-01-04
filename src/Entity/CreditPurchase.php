@@ -2,6 +2,8 @@
 
 namespace MLukman\SaasBundle\Entity;
 
+use MLukman\SaasBundle\Base\PaymentTransactionInterface;
+
 class CreditPurchase extends Payment
 {
     protected ?string $wallet;
@@ -9,7 +11,7 @@ class CreditPurchase extends Payment
     protected ?int $quantity;
     protected ?Credit $credit;
 
-    public function __construct(string $provider, string $transaction, string $wallet, string $topup, int $quantity = 1)
+    public function __construct(string $provider, PaymentTransactionInterface $transaction, string $wallet, string $topup, int $quantity = 1)
     {
         parent::__construct($provider, $transaction);
         $this->wallet = $wallet;

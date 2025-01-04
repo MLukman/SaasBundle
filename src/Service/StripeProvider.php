@@ -6,11 +6,15 @@ use Exception;
 use MLukman\SaasBundle\Base\PaymentProvider;
 use MLukman\SaasBundle\Base\PaymentTransactionInterface;
 use MLukman\SaasBundle\Config\TopupConfig;
-use MLukman\SaasBundle\DTO\StripeTransaction;
+use MLukman\SaasBundle\DTO\StripeCheckoutTransaction;
+use MLukman\SaasBundle\DTO\StripeTransferTransaction;
+use MLukman\SaasBundle\Entity\PayoutAccount;
+use MLukman\SaasBundle\Entity\PayoutPayment;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
 use Stripe\Event;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
+use Stripe\Transfer;
 use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,10 +47,7 @@ class StripeProvider extends PaymentProvider
         try {
             $checkoutSession = $this->stripeClient->checkout->sessions->retrieve($reference);
             if ("open" == ($checkoutSession->status ?? null)) {
-                $transaction = new StripeTransaction();
-                $transaction->reference = $checkoutSession->id;
-                $transaction->redirect = $checkoutSession->url;
-                return $transaction;
+                return new StripeCheckoutTransaction($checkoutSession);
             }
         } catch (Exception $ex) {
             
@@ -66,15 +67,12 @@ class StripeProvider extends PaymentProvider
             'mode' => 'payment',
             'success_url' => $redirectBackUrl,
         ]);
-        $transaction = new StripeTransaction();
-        $transaction->reference = $checkoutSession->id;
-        $transaction->redirect = $checkoutSession->url;
-        return $transaction;
+        return new StripeCheckoutTransaction($checkoutSession);
     }
 
-    public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): Response
+    public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): ?Response
     {
-        return new RedirectResponse($transaction->redirect);
+        return ($url = $transaction->getUrl()) ? new RedirectResponse($url) : null;
     }
 
     public function handleWebhook(Request $request)
@@ -90,8 +88,8 @@ class StripeProvider extends PaymentProvider
                 $event = Webhook::constructEvent($request->getContent(), $_SERVER['HTTP_STRIPE_SIGNATURE'], $this->params['signing_secret']);
             } catch (SignatureVerificationException $e) {
                 // Invalid signature
-                if ($this->getPaymentByTransaction($event->data->object->id)) {
-                    $this->updatePaymentTransaction($event->data->object->id, -1, 'Error verifying webhook signature');
+                if ($this->getPaymentByTransactionId($event->data->object->id)) {
+                    $this->updatePaymentTransaction($event->data->object->id, $event->data->toArray()['object'], $event->data->object->currency, $event->data->object->amount_total ?? 0, -1, 'Error verifying webhook signature');
                 }
                 http_response_code(400);
                 echo json_encode(['Error verifying webhook signature: ' => $e->getMessage()]);
@@ -101,7 +99,7 @@ class StripeProvider extends PaymentProvider
         switch ($event->type) {
             case 'checkout.session.completed':
                 $transaction = $event->data->object->id;
-                $this->updatePaymentTransaction($transaction, 1);
+                $this->updatePaymentTransaction($transaction, $event->data->toArray()['object'], $event->data->object->currency, $event->data->object->amount_total ?? 0, 1);
                 break;
         }
         http_response_code(200);
@@ -110,5 +108,53 @@ class StripeProvider extends PaymentProvider
     public function isTopupPurchasable(TopupConfig $topup): bool
     {
         return !empty($topup->getPaymentParams()['priceId'] ?? null);
+    }
+
+    protected function createPayoutAccount(): array
+    {
+        $account = $this->stripeClient->accounts->create([]);
+        return $account->toArray();
+    }
+
+    protected function checkPayoutAccountReadiness(array &$accountData): bool
+    {
+        $accountData = $this->stripeClient->accounts->retrieve($accountData['id'], [])->toArray();
+        return !empty($accountData['payouts_enabled'] ?? false);
+    }
+
+    protected function generateRedirectForPayoutAccountSetup(array $accountData, string $returnUrl, string $retryUrl): ?RedirectResponse
+    {
+        $link = $this->stripeClient->accountLinks->create([
+            'account' => $accountData['id'],
+            'type' => 'account_onboarding',
+            'refresh_url' => $retryUrl,
+            'return_url' => $returnUrl,
+        ]);
+        return new RedirectResponse($link->url);
+    }
+
+    public function performPayoutToPayoutAccount(PayoutAccount $account, string $currency, int $amount): ?PayoutPayment
+    {
+        if (!$account->isReady()) {
+            throw new \Exception(sprintf("Payout account %s is not ready to receive payout. Please complete the account setup.", $account->getId()));
+        }
+        $t = new Transfer;
+        $t->currency = $currency;
+        $t->amount = $amount;
+        $payment = new PayoutPayment('stripe', new StripeTransferTransaction($t), $account);
+        $this->em->persist($payment);
+        $this->commitChanges();
+
+        $transferData = $this->stripeClient->transfers->create([
+            'destination' => $account->getData()['id'],
+            'currency' => $currency,
+            'amount' => $amount,
+        ]);
+
+        $payment->updateTransaction(new StripeTransferTransaction($transferData));
+        $payment->setStatus(1);
+        $this->commitChanges();
+
+        return $payment;
     }
 }
