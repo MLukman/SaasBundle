@@ -13,13 +13,13 @@ class Credit
     protected int $points;
     protected int $balance;
     protected string $sourceType;
-    protected ?string $sourceReference;
+    protected string $sourceReference;
     protected DateTime $created;
     protected ?DateTime $expiry;
     protected Collection $usageParts;
     protected ?CreditPurchase $purchase;
 
-    public function __construct(string $wallet, int $points, string $sourceType, ?string $sourceReference = null)
+    public function __construct(string $wallet, int $points, string $sourceType, string $sourceReference)
     {
         $this->wallet = $wallet;
         $this->points = $points;

@@ -22,6 +22,7 @@ use MLukman\SaasBundle\InvalidSaasConfigurationException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class SaasPrepaidManager
 {
@@ -36,7 +37,8 @@ class SaasPrepaidManager
     public function __construct(
         protected EntityManagerInterface $em,
         protected RequestStack $requestStack,
-        protected EventDispatcherInterface $dispatcher
+        protected EventDispatcherInterface $dispatcher,
+        protected TranslatorInterface $translator
     ) {
         
     }
@@ -113,7 +115,7 @@ class SaasPrepaidManager
         return intval($qb->getQuery()->getSingleScalarResult());
     }
 
-    public function getPaymentByWalletAndTopup(string $wallet, string $topup, int $quantity, int $status = 0): ?CreditPurchase
+    public function getLatestCreditPurchaseByWalletAndTopup(string $wallet, string $topup, int $quantity, int $status = 0): ?CreditPurchase
     {
         try {
             return $this->em->createQuery('SELECT p FROM ' . static::$creditPurchaseClass . ' p WHERE p.wallet = :wallet AND p.topup = :topup AND p.quantity = :quantity AND p.status = :status ORDER BY p.created DESC')
@@ -167,17 +169,16 @@ class SaasPrepaidManager
     public function creditPurchaseInitiate(string $wallet, TopupConfig|string $topup, int $quantity, string $redirectBackUrl, bool $no_commit = false): ?RedirectResponse
     {
         if ($quantity < 1) {
-            throw new Exception("Topup quantity must be more than 0");
+            throw new Exception($this->translator->trans('Topup quantity must be more than 0', domain: 'saas'));
         }
         if (is_string($topup)) {
             $topup = $this->getTopupConfig($topup);
         }
 
         $trans = null;
-        if (($existing = $this->getPaymentByWalletAndTopup($wallet, $topup->_id, $quantity, 0))) {
-            if (!($trans = $this->paymentProvider->retrieveCreditPurchaseTransaction($existing->getTransaction()))) {
+        if (($existing = $this->getLatestCreditPurchaseByWalletAndTopup($wallet, $topup->_id, $quantity, 0))) {
+            if (!($trans = $this->paymentProvider->retrieveCreditPurchaseTransaction($existing->getTransactionId()))) {
                 $existing->setStatus(-1);
-                $existing->setUpdated(new DateTime());
             }
         }
         if (!$trans) {
@@ -214,7 +215,7 @@ class SaasPrepaidManager
     public function topupCredit(string $wallet, TopupConfig|string $topup, int $quantity = 1, ?CreditPurchase $purchase = null): Credit
     {
         if ($quantity < 1) {
-            throw new Exception("Topup quantity must be more than 0");
+            throw new Exception($this->translator->trans('Topup quantity must be more than 0', domain: 'saas'));
         }
         if (is_string($topup)) {
             $topup = $this->getTopupConfig($topup);
@@ -233,21 +234,19 @@ class SaasPrepaidManager
      */
     public function transferCredit(string $sourceWallet, string $destinationWallet, int $points, string $type, ?string $reference = null): CreditTransfer
     {
-        $creditUsage = $this->createCreditUsageRecord($sourceWallet, $points, $type, $reference);
-        $credit = $this->createCreditRecord($destinationWallet, $points, $type, $reference, '1 year');
-        $transfer = new CreditTransfer($creditUsage, $credit);
-        $this->em->persist($transfer);
+        $transfer = new CreditTransfer($sourceWallet, $destinationWallet, $points, $type, $reference);
+        $this->prepareCreditUsageRecord($transfer);
+        $transfer->setDestination($this->createCreditRecord($destinationWallet, $points, $type, $reference, $transfer));
         $this->commitChanges();
         return $transfer;
     }
 
     public function withdrawCredit(string $sourceWallet, int $points, PayoutAccount $account, string $currency, int $amount, string $type, string $reference): CreditWithdrawal
     {
-        $creditUsage = $this->createCreditUsageRecord($sourceWallet, $points, $type, $reference);
-        $withdrawal = new CreditWithdrawal($creditUsage);
-        $this->em->persist($withdrawal);
+        $withdrawal = new CreditWithdrawal($sourceWallet, $points, $type, $reference);
+        $this->prepareCreditUsageRecord($withdrawal);
         $payoutPayment = $this->paymentProvider->performPayoutToPayoutAccount($account, $currency, $amount);
-        $withdrawal->setDestination($payoutPayment);
+        $withdrawal->setPayment($payoutPayment);
         $this->commitChanges();
         return $withdrawal;
     }
@@ -270,7 +269,7 @@ class SaasPrepaidManager
         return $this->createCreditUsageRecord($wallet, $points, $type, $reference);
     }
 
-    protected function createCreditRecord(string $wallet, int $points, string $sourceType, ?string $sourceReference, DateTime|string|null $expiry, CreditPurchase|null $source = null): Credit
+    protected function createCreditRecord(string $wallet, int $points, string $sourceType, ?string $sourceReference, DateTime|string|null $expiry, mixed $source = null): Credit
     {
         $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $source];
         $credit = new static::$creditClass($wallet, $points, $sourceType, $sourceReference);
@@ -286,12 +285,20 @@ class SaasPrepaidManager
 
     protected function createCreditUsageRecord(string $wallet, int $points, string $type, string $reference): CreditUsage
     {
+        $usage = new static::$creditUsageClass($wallet, $points, $type, $reference);
+        $this->prepareCreditUsageRecord($usage);
+        return $usage;
+    }
+
+    protected function prepareCreditUsageRecord(CreditUsage $usage): void
+    {
         // first query those with expiry dates, followed by those without ones
         $queries = [
             'SELECT c FROM ' . static::$creditClass . ' c WHERE c.wallet = :wallet AND c.balance > 0 AND c.expiry > CURRENT_TIMESTAMP() ORDER BY c.expiry ASC',
             'SELECT c FROM ' . static::$creditClass . ' c WHERE c.wallet = :wallet AND c.balance > 0 AND c.expiry IS NULL ORDER BY c.created ASC'
         ];
-        $usage = new static::$creditUsageClass($wallet, $points, $type, $reference);
+        $wallet = $usage->getWallet();
+        $points = $usage->getPoints();
         for ($i = 0; $i < 2 && $points > 0; $i++) {
             $credits = $this->em->createQuery($queries[$i])->setParameter('wallet', $wallet)->getResult();
             $count_credits = count($credits);
@@ -307,17 +314,15 @@ class SaasPrepaidManager
                     $balance = 0;
                 }
                 $credits[$j]->getUsageParts()->add($part);
+                $usage->getCreditParts()->add($part);
                 $credits[$j]->recalculateBalance();
             }
         }
         if ($points > 0) {
-            print $wallet;
-            exit;
-            throw new InsufficientCreditBalanceException();
+            throw new InsufficientCreditBalanceException($this->translator->trans('There is not enough balance', domain: 'saas'));
         }
         $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $usage];
         $this->em->persist($usage);
-        return $usage;
     }
 
     /**

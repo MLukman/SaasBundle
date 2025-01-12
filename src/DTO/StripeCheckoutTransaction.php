@@ -3,10 +3,11 @@
 namespace MLukman\SaasBundle\DTO;
 
 use MLukman\SaasBundle\Base\PaymentTransactionInterface;
+use Stripe\Checkout\Session;
 
 class StripeCheckoutTransaction implements PaymentTransactionInterface
 {
-    public function __construct(protected \Stripe\Checkout $checkoutObject)
+    public function __construct(protected Session $checkoutObject)
     {
         
     }

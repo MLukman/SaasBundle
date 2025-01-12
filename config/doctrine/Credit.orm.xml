@@ -11,8 +11,8 @@
         <field name="wallet" column="wallet_identifier" type="string" length="255" nullable="false" />
         <field name="points" type="integer" nullable="false" />
         <field name="balance" type="integer" nullable="false" />
-        <field name="sourceType" column="source_type" type="string" length="50" nullable="false" />
-        <field name="sourceReference" column="source_reference" type="string" length="255" nullable="true" />
+        <field name="sourceType" column="type" type="string" length="50" nullable="false" />
+        <field name="sourceReference" column="reference" type="string" length="255" nullable="true" />
         <field name="created" type="datetime" nullable="false" />
         <field name="expiry" type="datetime" nullable="true" />
         <one-to-many field="usageParts" target-entity="CreditUsagePart" mapped-by="credit">
@@ -27,8 +27,8 @@
         <one-to-one field="purchase" target-entity="CreditPurchase" mapped-by="credit" />
         <indexes>
             <index name="saas_credit_wallet_idx" columns="wallet_identifier" />
-            <index name="saas_credit_sourcetype_idx" columns="source_type" />
-            <index name="saas_credit_sourcereference_idx" columns="source_reference" />
+            <index name="saas_credit_sourcetype_idx" columns="type" />
+            <index name="saas_credit_sourcereference_idx" columns="reference" />
         </indexes>
     </entity>
 

@@ -5,24 +5,25 @@ namespace MLukman\SaasBundle\Entity;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Event\PrePersistEventArgs;
+use Exception;
 
 class CreditUsage
 {
-
     protected int $id;
     protected string $wallet;
     protected int $points;
-    protected string $type;
-    protected string $reference;
+    protected string $usageType;
+    protected string $usageReference;
     protected DateTime $created;
     protected Collection $creditParts;
 
-    public function __construct(string $wallet, int $points, string $type, string $reference)
+    public function __construct(string $wallet, int $points, string $usageType, string $usageReference)
     {
         $this->wallet = $wallet;
         $this->points = $points;
-        $this->type = $type;
-        $this->reference = $reference;
+        $this->usageType = $usageType;
+        $this->usageReference = $usageReference;
         $this->created = new \DateTime();
         $this->creditParts = new ArrayCollection();
     }
@@ -42,14 +43,14 @@ class CreditUsage
         return $this->points;
     }
 
-    public function getType(): string
+    public function getUsageType(): string
     {
-        return $this->type;
+        return $this->usageType;
     }
 
-    public function getReference(): string
+    public function getUsageReference(): string
     {
-        return $this->reference;
+        return $this->usageReference;
     }
 
     public function getCreated(): DateTime
@@ -60,5 +61,12 @@ class CreditUsage
     public function getCreditParts(): Collection
     {
         return $this->creditParts;
+    }
+
+    public function prePersist(PrePersistEventArgs $evt): void
+    {
+        if ($this->creditParts->isEmpty()) {
+            throw new Exception("Implementation Error: CreditUsage is invalid");
+        }
     }
 }

@@ -8,7 +8,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class CreditBalanceEvent extends Event
 {
-    public function __construct(protected string $wallet, protected int $balanceBefore, protected int $balanceAfter, protected CreditPurchase|CreditUsage|null $source)
+    public function __construct(protected string $wallet, protected int $balanceBefore, protected int $balanceAfter, protected mixed $source)
     {
 
     }
@@ -28,7 +28,7 @@ class CreditBalanceEvent extends Event
         return $this->balanceAfter;
     }
 
-    public function getSource(): CreditPurchase|CreditUsage|null
+    public function getSource(): mixed
     {
         return $this->source;
     }

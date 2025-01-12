@@ -4,37 +4,17 @@ namespace MLukman\SaasBundle\Entity;
 
 use DateTime;
 
-class CreditWithdrawal
+class CreditWithdrawal extends CreditUsage
 {
-    protected int $id;
-    protected CreditUsage $source;
-    protected ?PayoutPayment $destination;
-    protected DateTime $created;
+    protected ?PayoutPayment $payment;
 
-    public function __construct(CreditUsage $source, ?PayoutPayment $destination = null)
+    public function getPayment(): ?PayoutPayment
     {
-        $this->source = $source;
-        $this->destination = $destination;
-        $this->created = new DateTime();
+        return $this->payment;
     }
 
-    public function getSource(): CreditUsage
+    public function setPayment(?PayoutPayment $payment): void
     {
-        return $this->source;
-    }
-
-    public function getCreated(): DateTime
-    {
-        return $this->created;
-    }
-
-    public function getDestination(): ?PayoutPayment
-    {
-        return $this->destination;
-    }
-
-    public function setDestination(?PayoutPayment $destination): void
-    {
-        $this->destination = $destination;
+        $this->payment = $payment;
     }
 }

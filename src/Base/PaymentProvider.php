@@ -2,6 +2,7 @@
 
 namespace MLukman\SaasBundle\Base;
 
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NoResultException;
 use MLukman\SaasBundle\Config\TopupConfig;
@@ -74,6 +75,35 @@ abstract class PaymentProvider
             $this->em->persist($pa);
             $this->commitChanges();
             return $pa;
+        }
+    }
+
+    public function getPayoutPaymentRecords(PayoutAccount $account, ?DateTime $from = null, ?DateTime $until = null): array
+    {
+        $qb = $this->em->createQueryBuilder()->select('p')->from(PayoutPayment::class, 'p')->where('p.account = :account')->setParameter('account', $account);
+        if ($from) {
+            $qb->andWhere('p.created >= :from')->setParameter('from', $from);
+        }
+        if ($until) {
+            $qb->andWhere('p.created <= :until')->setParameter('until', $until);
+        }
+        $qb->addOrderBy('created', 'ASC');
+        return $qb->getQuery()->getArrayResult();
+    }
+
+    public function getPayoutPaymentSum(PayoutAccount $account, ?DateTime $from = null, ?DateTime $until = null): int
+    {
+        $qb = $this->em->createQueryBuilder()->select('SUM(p.amount)')->from(PayoutPayment::class, 'p')->where('p.account = :account')->setParameter('account', $account);
+        if ($from) {
+            $qb->andWhere('p.created >= :from')->setParameter('from', $from);
+        }
+        if ($until) {
+            $qb->andWhere('p.created <= :until')->setParameter('until', $until);
+        }
+        try {
+            return $qb->getQuery()->getSingleScalarResult();
+        } catch (NoResultException $ex) {
+            return 0;
         }
     }
 
