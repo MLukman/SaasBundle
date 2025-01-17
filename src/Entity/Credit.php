@@ -18,6 +18,7 @@ class Credit
     protected ?DateTime $expiry;
     protected Collection $usageParts;
     protected ?CreditPurchase $purchase;
+    protected ?CreditTransfer $transfer;
 
     public function __construct(string $wallet, int $points, string $sourceType, string $sourceReference)
     {
@@ -93,5 +94,10 @@ class Credit
     public function getPurchase(): ?CreditPurchase
     {
         return $this->purchase;
+    }
+
+    public function getTransfer(): ?CreditTransfer
+    {
+        return $this->transfer;
     }
 }

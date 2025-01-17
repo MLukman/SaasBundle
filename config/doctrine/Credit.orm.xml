@@ -25,6 +25,7 @@
             </cascade>
         </one-to-many>
         <one-to-one field="purchase" target-entity="CreditPurchase" mapped-by="credit" />
+        <one-to-one field="transfer" target-entity="CreditTransfer" mapped-by="destination" />
         <indexes>
             <index name="saas_credit_wallet_idx" columns="wallet_identifier" />
             <index name="saas_credit_sourcetype_idx" columns="type" />

@@ -40,7 +40,7 @@ class SaasPrepaidManager
         protected EventDispatcherInterface $dispatcher,
         protected TranslatorInterface $translator
     ) {
-        
+
     }
 
     public function getConfiguration(): PrepaidConfig
@@ -67,7 +67,7 @@ class SaasPrepaidManager
     {
         $topups = $this->configuration->getTopups();
         if (!isset($topups[$topupId])) {
-            throw new InvalidSaasConfigurationException("Topup $topupId is invalid");
+            throw new InvalidSaasConfigurationException($this->translator->trans("Topup %topupId% is invalid", ['%topupId%' => $topupId], 'saas'));
         }
         return $topups[$topupId];
     }
@@ -205,7 +205,7 @@ class SaasPrepaidManager
 
     /**
      * Register a credit topup to add credit balance of a wallet.
-     * 
+     *
      * @param string $wallet The wallet to add credit balance
      * @param TopupConfig|string $topup Either the TopupConfig data or the name as defined in the configuration
      * @param int $quantity The multiplier for the topup credit
@@ -234,7 +234,7 @@ class SaasPrepaidManager
      */
     public function transferCredit(string $sourceWallet, string $destinationWallet, int $points, string $type, ?string $reference = null): CreditTransfer
     {
-        $transfer = new CreditTransfer($sourceWallet, $destinationWallet, $points, $type, $reference);
+        $transfer = new CreditTransfer($sourceWallet, $points, $type, $reference);
         $this->prepareCreditUsageRecord($transfer);
         $transfer->setDestination($this->createCreditRecord($destinationWallet, $points, $type, $reference, $transfer));
         $this->commitChanges();
@@ -253,7 +253,7 @@ class SaasPrepaidManager
 
     /**
      * Register a credit spending to subtract credit balance of a wallet.
-     * 
+     *
      * @param string $wallet The wallet to subtract from
      * @param string $type The type of credit usage, either predefined in configuration or arbitrary
      * @param string $reference Arbitrary reference information to store in the record
@@ -264,7 +264,7 @@ class SaasPrepaidManager
     public function spendCredit(string $wallet, string $type, string $reference, ?int $points = null): CreditUsage
     {
         if (is_null($points) && is_null($points = $this->configuration->getUsages()[$type] ?? null)) {
-            throw new InvalidSaasConfigurationException("There is no predefined prepaid usage with type '$type'");
+            throw new InvalidSaasConfigurationException($this->translator->trans("There is no predefined prepaid usage with type '%type%'", ['%type%' => $type], 'saas'));
         }
         return $this->createCreditUsageRecord($wallet, $points, $type, $reference);
     }
@@ -319,7 +319,7 @@ class SaasPrepaidManager
             }
         }
         if ($points > 0) {
-            throw new InsufficientCreditBalanceException($this->translator->trans('There is not enough balance', domain: 'saas'));
+            $this->throwInsufficientCreditBalanceException();
         }
         $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $usage];
         $this->em->persist($usage);
@@ -338,5 +338,10 @@ class SaasPrepaidManager
             }
         }
         $this->walletBalances = [];
+    }
+
+    public function throwInsufficientCreditBalanceException(): void
+    {
+        throw new InsufficientCreditBalanceException($this->translator->trans('There is not enough credit balance', domain: 'saas'));
     }
 }

@@ -2,8 +2,6 @@
 
 namespace MLukman\SaasBundle\Entity;
 
-use DateTime;
-
 class CreditTransfer extends CreditUsage
 {
     protected Credit $destination;

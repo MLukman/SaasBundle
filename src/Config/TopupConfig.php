@@ -2,6 +2,7 @@
 
 namespace MLukman\SaasBundle\Config;
 
+use MLukman\SymfonyConfigOOP\Attribute\ConfigKey;
 use MLukman\SymfonyConfigOOP\Attribute\ArrayConfig;
 use MLukman\SymfonyConfigOOP\Attribute\IntegerConfig;
 use MLukman\SymfonyConfigOOP\Attribute\ScalarConfig;
@@ -9,6 +10,7 @@ use MLukman\SymfonyConfigOOP\Attribute\ScalarConfig;
 class TopupConfig
 {
 
+    #[ConfigKey]
     public string $_id;
 
     #[ScalarConfig(info: "The user-friendly name of this topup.", example: "+100 Credits", isRequired: true)]

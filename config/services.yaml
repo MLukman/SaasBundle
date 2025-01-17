@@ -11,3 +11,5 @@ services:
     MLukman\SaasBundle\Service\:
         resource: '../src/Service/'
 
+    MLukman\SaasBundle\Command\:
+        resource: '../src/Command/'
