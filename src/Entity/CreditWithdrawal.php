@@ -2,8 +2,6 @@
 
 namespace MLukman\SaasBundle\Entity;
 
-use DateTime;
-
 class CreditWithdrawal extends CreditUsage
 {
     protected ?PayoutPayment $payment;

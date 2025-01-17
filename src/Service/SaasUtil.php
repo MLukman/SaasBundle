@@ -32,7 +32,7 @@ class SaasUtil
             if (empty($configuration)) {
                 return;
             }
-            $configuration = ConfigUtil::process($configuration, SaasConfig::class);
+            $configuration = ConfigUtil::deserializeObject($configuration, SaasConfig::class);
         }
         $this->configuration = $configuration;
         foreach ($this->paymentProviders as $paymentProvider) {

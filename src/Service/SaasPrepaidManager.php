@@ -67,7 +67,7 @@ class SaasPrepaidManager
     {
         $topups = $this->configuration->getTopups();
         if (!isset($topups[$topupId])) {
-            throw new InvalidSaasConfigurationException("Topup $topupId is invalid");
+            throw new InvalidSaasConfigurationException($this->translator->trans("Topup %topupId% is invalid", ['%topupId%' => $topupId], 'saas'));
         }
         return $topups[$topupId];
     }
@@ -264,7 +264,7 @@ class SaasPrepaidManager
     public function spendCredit(string $wallet, string $type, string $reference, ?int $points = null): CreditUsage
     {
         if (is_null($points) && is_null($points = $this->configuration->getUsages()[$type] ?? null)) {
-            throw new InvalidSaasConfigurationException("There is no predefined prepaid usage with type '$type'");
+            throw new InvalidSaasConfigurationException($this->translator->trans("There is no predefined prepaid usage with type '%type%'", ['%type%' => $type], 'saas'));
         }
         return $this->createCreditUsageRecord($wallet, $points, $type, $reference);
     }
@@ -319,7 +319,7 @@ class SaasPrepaidManager
             }
         }
         if ($points > 0) {
-            throw new InsufficientCreditBalanceException($this->translator->trans('There is not enough balance', domain: 'saas'));
+            $this->throwInsufficientCreditBalanceException();
         }
         $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $usage];
         $this->em->persist($usage);
@@ -338,5 +338,10 @@ class SaasPrepaidManager
             }
         }
         $this->walletBalances = [];
+    }
+
+    public function throwInsufficientCreditBalanceException(): void
+    {
+        throw new InsufficientCreditBalanceException($this->translator->trans('There is not enough credit balance', domain: 'saas'));
     }
 }

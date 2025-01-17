@@ -1,2 +1,4 @@
-There is not enough balance: There is not enough balance
+There is not enough credit balance: There is not enough credit balance
 Topup quantity must be more than 0: Topup quantity must be more than 0
+Topup %topupId% is invalid: Topup %topupId% is invalid
+There is no predefined prepaid usage with type '%type%': There is no predefined prepaid usage with type '%type%'
