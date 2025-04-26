@@ -101,7 +101,7 @@ abstract class PaymentProvider
             $qb->andWhere('p.created <= :until')->setParameter('until', $until);
         }
         try {
-            return $qb->getQuery()->getSingleScalarResult();
+            return intval($qb->getQuery()->getSingleScalarResult());
         } catch (NoResultException $ex) {
             return 0;
         }
