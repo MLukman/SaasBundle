@@ -40,7 +40,7 @@ class SaasPrepaidManager
         protected EventDispatcherInterface $dispatcher,
         protected TranslatorInterface $translator
     ) {
-
+        
     }
 
     public function getConfiguration(): PrepaidConfig
@@ -271,7 +271,7 @@ class SaasPrepaidManager
 
     protected function createCreditRecord(string $wallet, int $points, string $sourceType, ?string $sourceReference, DateTime|string|null $expiry, mixed $source = null): Credit
     {
-        $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $source];
+        $this->cacheWalletBalance($wallet, $source);
         $credit = new static::$creditClass($wallet, $points, $sourceType, $sourceReference);
         if (is_string($expiry)) {
             $expiry = (new \DateTime())->modify($expiry);
@@ -321,8 +321,15 @@ class SaasPrepaidManager
         if ($points > 0) {
             $this->throwInsufficientCreditBalanceException();
         }
-        $this->walletBalances[$wallet] = [$this->getCreditBalance($wallet), $usage];
+        $this->cacheWalletBalance($wallet, $usage);
         $this->em->persist($usage);
+    }
+
+    public function cacheWalletBalance(string $wallet, mixed $source = null): int
+    {
+        $balance = $this->getCreditBalance($wallet);
+        $this->walletBalances[$wallet] = [$balance, $source];
+        return $balance;
     }
 
     /**
@@ -334,7 +341,7 @@ class SaasPrepaidManager
         foreach ($this->walletBalances as $wallet => $info) {
             $current = $this->getCreditBalance($wallet);
             if ($current != $info[0]) {
-                $this->dispatcher->dispatch(new CreditBalanceEvent($wallet, $info[0], $current, $info[1]));
+                $this->dispatcher->dispatch(new CreditBalanceEvent($wallet, $info[0], $current, $info[1] ?? null));
             }
         }
         $this->walletBalances = [];
