@@ -2,15 +2,13 @@
 
 namespace MLukman\SaasBundle\Event;
 
-use MLukman\SaasBundle\Entity\CreditPurchase;
-use MLukman\SaasBundle\Entity\CreditUsage;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class CreditBalanceEvent extends Event
 {
     public function __construct(protected string $wallet, protected int $balanceBefore, protected int $balanceAfter, protected mixed $source)
     {
-
+        
     }
 
     public function getWallet(): string
