@@ -42,19 +42,6 @@ class StripeProvider extends PaymentProvider
         return false;
     }
 
-    public function retrieveCreditPurchaseTransaction(string $reference): ?PaymentTransactionInterface
-    {
-        try {
-            $checkoutSession = $this->stripeClient->checkout->sessions->retrieve($reference);
-            if ("open" == ($checkoutSession->status ?? null)) {
-                return new StripeCheckoutTransaction($checkoutSession);
-            }
-        } catch (Exception $ex) {
-            
-        }
-        return null;
-    }
-
     public function initiateCreditPurchaseTransaction(TopupConfig $topup, int $quantity, string $redirectBackUrl): ?PaymentTransactionInterface
     {
         $checkoutSession = $this->stripeClient->checkout->sessions->create([
@@ -68,6 +55,24 @@ class StripeProvider extends PaymentProvider
             'success_url' => $redirectBackUrl,
         ]);
         return new StripeCheckoutTransaction($checkoutSession);
+    }
+
+    public function initiatePaymentTransaction(string $currency, int $amount, string $productName, string $redirectBackUrl): ?PaymentTransactionInterface
+    {
+        // not implemented for now as we don't have any non-topup payments yet, can be implemented in the future if needed
+        throw new \Exception("Not implemented");
+    }
+
+    public function retrievePaymentTransaction(string $reference): ?PaymentTransactionInterface
+    {
+        try {
+            $checkoutSession = $this->stripeClient->checkout->sessions->retrieve($reference);
+            if ("open" == ($checkoutSession->status ?? null)) {
+                return new StripeCheckoutTransaction($checkoutSession);
+            }
+        } catch (Exception $ex) {
+        }
+        return null;
     }
 
     public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): ?Response
@@ -116,16 +121,18 @@ class StripeProvider extends PaymentProvider
         return $account->toArray();
     }
 
-    protected function checkPayoutAccountReadiness(array &$accountData): bool
+    protected function checkPayoutAccountReadiness(PayoutAccount $account): bool
     {
+        $accountData = $account->getData();
         $accountData = $this->stripeClient->accounts->retrieve($accountData['id'], [])->toArray();
+        $account->setData($accountData);
         return !empty($accountData['payouts_enabled'] ?? false);
     }
 
-    protected function generateRedirectForPayoutAccountSetup(array $accountData, string $returnUrl, string $retryUrl): ?RedirectResponse
+    public function generateRedirectForPayoutAccountSetup(PayoutAccount $account, string $returnUrl, string $retryUrl): ?RedirectResponse
     {
         $link = $this->stripeClient->accountLinks->create([
-            'account' => $accountData['id'],
+            'account' => $account->getData()['id'],
             'type' => 'account_onboarding',
             'refresh_url' => $retryUrl,
             'return_url' => $returnUrl,

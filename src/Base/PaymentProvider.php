@@ -15,22 +15,19 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use UI\Exception\RuntimeException;
+use RuntimeException;
 
 #[AutoconfigureTag('saas.payment.provider')]
 abstract class PaymentProvider
 {
-    public function __construct(protected EntityManagerInterface $em, protected SaasPrepaidManager $prepaidManager)
-    {
-        
-    }
+    public function __construct(protected EntityManagerInterface $em, protected SaasPrepaidManager $prepaidManager) {}
 
     public function getPaymentByTransactionId(string $transactionId): ?Payment
     {
         try {
             return $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\Payment p WHERE p.transactionId = :transaction')
-                    ->setParameter('transaction', $transactionId)
-                    ->getSingleResult();
+                ->setParameter('transaction', $transactionId)
+                ->getSingleResult();
         } catch (NoResultException $ex) {
             return null;
         }
@@ -63,9 +60,8 @@ abstract class PaymentProvider
             $account = $this->em->createQuery('SELECT p FROM \MLukman\SaasBundle\Entity\PayoutAccount p WHERE p.id = :id')
                 ->setParameter('id', $id)
                 ->getSingleResult();
-            if (!$account->isReady() && ($accountData = $account->getData()) && $this->checkPayoutAccountReadiness($accountData)) {
+            if (!$account->isReady() && $this->checkPayoutAccountReadiness($account)) {
                 $account->setReady(true);
-                $account->setData($accountData);
                 $this->commitChanges();
             }
             return $account;
@@ -107,25 +103,33 @@ abstract class PaymentProvider
         }
     }
 
-    public function getRedirectToPayoutAccountSetup(PayoutAccount $account, string $returnUrl, string $retryUrl): ?RedirectResponse
-    {
-        return $this->generateRedirectForPayoutAccountSetup($account->getData(), $returnUrl, $retryUrl);
-    }
-
     public function commitChanges()
     {
         $this->em->flush();
     }
 
+    public function retrieveCreditPurchaseTransaction(string $reference): ?PaymentTransactionInterface
+    {
+        return $this->retrievePaymentTransaction($reference);
+    }
+
+    // ##### COMMON METHODS #####
     abstract public function getId(): string;
     abstract public function initialize(array $paymentConfigParams): bool;
-    abstract public function initiateCreditPurchaseTransaction(TopupConfig $topup, int $quantity, string $redirectBackUrl): ?PaymentTransactionInterface;
-    abstract public function retrieveCreditPurchaseTransaction(string $reference): ?PaymentTransactionInterface;
+
+    // ##### PAYMENT RELATED METHODS #####
+    abstract public function initiatePaymentTransaction(string $currency, int $amount, string $productName, string $redirectBackUrl): ?PaymentTransactionInterface;
+    abstract public function retrievePaymentTransaction(string $reference): ?PaymentTransactionInterface;
     abstract public function generateRedirectForTransaction(PaymentTransactionInterface $transaction): ?Response;
     abstract public function handleWebhook(Request $request);
+
+    // ##### CREDIT PURCHASE RELATED METHODS #####
     abstract public function isTopupPurchasable(TopupConfig $topup): bool;
-    abstract public function performPayoutToPayoutAccount(PayoutAccount $account, string $currency, int $amount): ?PayoutPayment;
+    abstract public function initiateCreditPurchaseTransaction(TopupConfig $topup, int $quantity, string $redirectBackUrl): ?PaymentTransactionInterface;
+
+    // ##### PAYOUT RELATED METHODS - can be implemented in the future when we have payout functionality, for now we just define the method signatures here so that we can implement them in the future without breaking changes #####
     abstract protected function createPayoutAccount(): array;
-    abstract protected function checkPayoutAccountReadiness(array &$accountData): bool;
-    abstract protected function generateRedirectForPayoutAccountSetup(array $accountData, string $returnUrl, string $retryUrl): ?RedirectResponse;
+    abstract protected function checkPayoutAccountReadiness(PayoutAccount $account): bool;
+    abstract public function performPayoutToPayoutAccount(PayoutAccount $account, string $currency, int $amount): ?PayoutPayment;
+    abstract public function generateRedirectForPayoutAccountSetup(PayoutAccount $account, string $returnUrl, string $retryUrl): ?RedirectResponse;
 }
