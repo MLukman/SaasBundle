@@ -11,11 +11,14 @@ use MLukman\SaasBundle\Entity\Payment;
 use MLukman\SaasBundle\Entity\PayoutAccount;
 use MLukman\SaasBundle\Entity\PayoutPayment;
 use MLukman\SaasBundle\InvalidSaasConfigurationException;
+use Monolog\Attribute\WithMonologChannel;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+#[WithMonologChannel('saas')]
 class HitpayProvider extends PaymentProvider
 {
     protected const API_BASE_URL_SANDBOX = 'https://api.sandbox.hit-pay.com/v1/';
@@ -24,8 +27,12 @@ class HitpayProvider extends PaymentProvider
     protected HttpClientInterface $client;
     protected ?string $apiSalt;
 
-    public function __construct(EntityManagerInterface $em, SaasPrepaidManager $prepaidManager, protected HttpClientInterface $baseClient)
-    {
+    public function __construct(
+        EntityManagerInterface $em,
+        SaasPrepaidManager $prepaidManager,
+        protected HttpClientInterface $baseClient,
+        protected LoggerInterface $logger
+    ) {
         parent::__construct($em, $prepaidManager);
     }
 
@@ -69,8 +76,19 @@ class HitpayProvider extends PaymentProvider
                 'redirect_url' => $redirectBackUrl
             ])
         ]);
-        if (!str_starts_with($response->getStatusCode(), '2')) {
-            throw new \Exception("Failed to create Hitpay checkout: " . $response->getContent(false));
+        $this->logger->debug('[Hitpay] Initiating payment transaction', [
+            'currency' => $currency,
+            'amount' => $amount,
+            'product_name' => $productName,
+            'redirect_url' => $redirectBackUrl
+        ]);
+        if (!str_starts_with($responseStatus = $response->getStatusCode(), '2')) {
+            $responseContent = $response->getContent(false);
+            $this->logger->error('[Hitpay] Failed to create checkout', [
+                'status_code' => $responseStatus,
+                'response' => $responseContent
+            ]);
+            throw new \Exception("Failed to create Hitpay checkout: " . $responseContent);
         }
         return new HitpayCheckoutTransaction($response->toArray());
     }
@@ -94,15 +112,26 @@ class HitpayProvider extends PaymentProvider
     {
         $payload = $request->getContent();
         if ($this->apiSalt) {
-            $signature = $request->headers->get('Hitpay-Signature');
-            $expectedSignature = hash_hmac('sha256', $payload, $this->apiSalt);
-            if (!hash_equals($expectedSignature, $signature)) {
+            if (!$payload) {
                 http_response_code(400);
-                exit("Invalid signature");
+                exit("Missing request payload");
+            }
+            $expectedSignature = hash_hmac('sha256', $payload, $this->apiSalt);
+            $signature = $request->headers->get('Hitpay-Signature', '');
+            if (!hash_equals($expectedSignature, $signature)) {
+                $this->logger->warning('[Hitpay] Invalid webhook signature', [
+                    'source_ip' => $request->getClientIp(),
+                    'expected_signature' => $expectedSignature,
+                    'actual_signature' => $signature,
+                ]);
+                http_response_code(400);
+                exit(sprintf("Invalid signature. Expected: '%s'. Actual: '%s'.", $expectedSignature, $signature));
             }
         }
 
-        switch ($request->headers->get('Hitpay-Event-Object') . '.' . $request->headers->get('Hitpay-Event-Type')) {
+        $object = $request->headers->get('Hitpay-Event-Object', 'null');
+        $type = $request->headers->get('Hitpay-Event-Type', 'null');
+        switch ($event = "$object.$type") {
             case 'payment_request.completed':
                 $data = json_decode($payload, true);
                 if ($data && isset($data['id'])) {
@@ -110,15 +139,28 @@ class HitpayProvider extends PaymentProvider
                     $payment = $this->getPaymentByTransactionId($transactionId);
                     if ($payment) {
                         $this->updatePaymentTransaction($transactionId, $data, $data['currency'], $data['amount'], 1, 'Payment successful');
+                        $this->logger->info('[Hitpay] Payment completed', [
+                            'transaction_id' => $transactionId,
+                            'currency' => $data['currency'],
+                            'amount' => $data['amount']
+                        ]);
                     }
                 }
                 break;
+
+            default:
+                $this->logger->warning('[Hitpay] Received unsupported webhook event', [
+                    'source_ip' => $request->getClientIp(),
+                    'event' => $event,
+                ]);
+                http_response_code(400);
+                exit("Unsupported webhook event: $event");
         }
     }
 
     public function isTopupPurchasable(TopupConfig $topup): bool
     {
-        return true;
+        return count($topup->getPrices()) > 0;
     }
 
     public function createPayoutAccount(): array

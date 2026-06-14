@@ -1,6 +1,6 @@
 {
 	"name": "mlukman/saas-bundle",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"description": "Simplify implementation of Symfony 6.x/7.x web application with SaaS capabilities such as credit purchase, subscription management, usage tracking etc",
 	"type": "symfony-bundle",
 	"require": {
@@ -13,6 +13,7 @@
 		"symfony/console": "^6.4|^7.0|^8.0",
 		"symfony/framework-bundle": "^6.4|^7.0|^8.0",
 		"symfony/http-client": "^6.4|^7.0|^8.0",
+		"symfony/monolog-bundle": "^3.5|^4.0",
 		"symfony/runtime": "^6.4|^7.0|^8.0",
 		"symfony/routing": "^6.4|^7.0|^8.0",
 		"symfony/translation": "^6.4|^7.0|^8.0"
